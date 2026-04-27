@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="할일" />
+<meta name="theme-color" content="#1a1a1a" id="theme-meta" />
+<link rel="manifest" href="./manifest.json" />
+<link rel="apple-touch-icon" href="./icons/icon-192.png" />
+<title>할 일 목록</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  [data-theme="light"] {
+    --bg: #ffffff;
+    --bg-secondary: #f5f5f3;
+    --text: #1a1a1a;
+    --text-secondary: #666660;
+    --text-tertiary: #aaa9a3;
+    --border: rgba(0,0,0,0.12);
+    --border-md: rgba(0,0,0,0.22);
+    --theme-color: #ffffff;
+  }
+  [data-theme="dark"] {
+    --bg: #1c1c1a;
+    --bg-secondary: #2a2a28;
+    --text: #f0ede8;
+    --text-secondary: #a09d98;
+    --text-tertiary: #605e5a;
+    --border: rgba(255,255,255,0.10);
+    --border-md: rgba(255,255,255,0.22);
+    --theme-color: #1c1c1a;
+  }
+
+  html, body { height: 100%; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    min-height: 100dvh;
+    transition: background 0.2s, color 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: env(safe-area-inset-top, 1.5rem) 1rem env(safe-area-inset-bottom, 1.5rem);
+    padding-top: max(env(safe-area-inset-top), 1.5rem);
+    padding-bottom: max(env(safe-area-inset-bottom), 1.5rem);
+  }
+
+  .header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+  h1 { font-size: 22px; font-weight: 500; }
+  .date { font-size: 14px; color: var(--text-secondary); margin-bottom: 1.5rem; }
+
+  .theme-toggle {
+    display: flex;
+    align-items: center;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-md);
+    border-radius: 99px;
+    padding: 3px;
+    gap: 2px;
+    transition: background 0.2s;
+  }
+  .theme-toggle-btn {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px;
+    transition: background 0.15s, box-shadow 0.15s;
+  }
+  .theme-toggle-btn.active {
+    background: var(--bg);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  }
+
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 1.5rem; }
+  .stat { background: var(--bg-secondary); border-radius: 8px; padding: 0.75rem 1rem; transition: background 0.2s; }
+  .stat-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
+  .stat-value { font-size: 22px; font-weight: 500; }
+
+  .input-area {
+    background: var(--bg);
+    border: 1.5px solid var(--border-md);
+    border-radius: 12px;
+    padding: 10px 12px;
+    margin-bottom: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: border-color 0.15s, background 0.2s;
+  }
+  .input-area:focus-within { border-color: var(--text); }
+  .input-area input[type="text"] {
+    width: 100%;
+    border: none;
+    outline: none;
+    font-size: 16px;
+    color: var(--text);
+    background: transparent;
+    font-family: inherit;
+    padding: 2px 0;
+  }
+  .input-area input::placeholder { color: var(--text-tertiary); }
+  .input-bottom { display: flex; gap: 8px; align-items: center; justify-content: flex-end; }
+
+  select {
+    font-size: 14px;
+    border: 1px solid var(--border-md);
+    border-radius: 8px;
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    padding: 7px 10px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.2s;
+  }
+
+  .add-btn {
+    font-size: 14px;
+    padding: 7px 18px;
+    border-radius: 8px;
+    border: none;
+    background: var(--text);
+    color: var(--bg);
+    cursor: pointer;
+    font-weight: 500;
+    white-space: nowrap;
+    font-family: inherit;
+    transition: opacity 0.15s, background 0.2s, color 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .add-btn:active { opacity: 0.7; }
+
+  .filter-row { display: flex; gap: 6px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .filter-btn {
+    font-size: 13px; padding: 6px 14px; border-radius: 99px;
+    border: 1px solid var(--border-md);
+    background: transparent; color: var(--text-secondary);
+    cursor: pointer; font-family: inherit; transition: all 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .filter-btn.active { background: var(--text); color: var(--bg); border-color: transparent; }
+
+  .todo-list { display: flex; flex-direction: column; gap: 8px; }
+  .todo-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.85rem 1rem;
+    display: flex; align-items: center; gap: 12px;
+    transition: border-color 0.15s, background 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .todo-card.done { opacity: 0.5; }
+
+  .checkbox {
+    width: 22px; height: 22px; border-radius: 50%;
+    border: 1.5px solid var(--border-md);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: all 0.15s; background: transparent;
+  }
+  .checkbox.checked { background: var(--text); border-color: var(--text); }
+  .checkmark { display: none; width: 11px; height: 11px; }
+  .checkbox.checked .checkmark { display: block; }
+
+  .todo-text { flex: 1; font-size: 15px; line-height: 1.4; }
+  .todo-card.done .todo-text { text-decoration: line-through; color: var(--text-tertiary); }
+
+  .priority-badge { font-size: 11px; padding: 3px 9px; border-radius: 99px; font-weight: 500; flex-shrink: 0; }
+  .p-high { background: #FCEBEB; color: #A32D2D; }
+  .p-mid  { background: #FAEEDA; color: #854F0B; }
+  .p-low  { background: #EAF3DE; color: #3B6D11; }
+
+  .delete-btn {
+    background: none; border: none; cursor: pointer;
+    color: var(--text-tertiary); font-size: 18px; line-height: 1;
+    padding: 4px; flex-shrink: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .empty { text-align: center; padding: 3rem 1rem; color: var(--text-tertiary); font-size: 14px; }
+
+  .install-banner {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-md);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 1rem;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+  .install-banner.show { display: flex; }
+  .install-btn {
+    margin-left: auto;
+    font-size: 13px;
+    padding: 5px 12px;
+    border-radius: 8px;
+    border: none;
+    background: var(--text);
+    color: var(--bg);
+    cursor: pointer;
+    font-family: inherit;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .install-close {
+    background: none; border: none; cursor: pointer;
+    color: var(--text-tertiary); font-size: 16px; padding: 2px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header-row">
+    <h1>할 일 목록</h1>
+    <div class="theme-toggle">
+      <button class="theme-toggle-btn active" id="btn-light" title="라이트 모드">☀️</button>
+      <button class="theme-toggle-btn" id="btn-dark" title="다크 모드">🌙</button>
+    </div>
+  </div>
+  <p class="date" id="date-label"></p>
+
+  <div class="install-banner" id="install-banner">
+    <span>📲 홈 화면에 앱으로 추가하세요!</span>
+    <button class="install-btn" id="install-btn">설치</button>
+    <button class="install-close" id="install-close">✕</button>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-label">전체</div><div class="stat-value" id="cnt-all">0</div></div>
+    <div class="stat"><div class="stat-label">완료</div><div class="stat-value" id="cnt-done">0</div></div>
+    <div class="stat"><div class="stat-label">남은 일</div><div class="stat-value" id="cnt-left">0</div></div>
+  </div>
+
+  <div class="input-area">
+    <input type="text" id="new-task" placeholder="새 할 일을 입력하세요..." />
+    <div class="input-bottom">
+      <select id="new-priority">
+        <option value="low">낮음</option>
+        <option value="mid" selected>보통</option>
+        <option value="high">높음</option>
+      </select>
+      <button class="add-btn" id="add-btn">추가</button>
+    </div>
+  </div>
+
+  <div class="filter-row">
+    <button class="filter-btn active" data-filter="all">전체</button>
+    <button class="filter-btn" data-filter="active">진행 중</button>
+    <button class="filter-btn" data-filter="done">완료</button>
+    <button class="filter-btn" data-filter="high">높은 우선순위</button>
+  </div>
+
+  <div class="todo-list" id="todo-list"></div>
+</div>
+
+<script>
+  document.getElementById('date-label').textContent = new Date().toLocaleDateString('ko-KR', {
+    year: 'numeric', month: 'long', day: 'numeric', weekday: 'long'
+  });
+
+  // theme
+  const html = document.documentElement;
+  const btnLight = document.getElementById('btn-light');
+  const btnDark = document.getElementById('btn-dark');
+  const themeMeta = document.getElementById('theme-meta');
+
+  function setTheme(theme) {
+    html.setAttribute('data-theme', theme);
+    localStorage.setItem('todo-theme', theme);
+    btnLight.classList.toggle('active', theme === 'light');
+    btnDark.classList.toggle('active', theme === 'dark');
+    themeMeta.setAttribute('content', theme === 'dark' ? '#1c1c1a' : '#ffffff');
+  }
+
+  const savedTheme = localStorage.getItem('todo-theme') ||
+    (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  setTheme(savedTheme);
+  btnLight.addEventListener('click', () => setTheme('light'));
+  btnDark.addEventListener('click', () => setTheme('dark'));
+
+  // PWA install prompt
+  let deferredPrompt = null;
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredPrompt = e;
+    document.getElementById('install-banner').classList.add('show');
+  });
+  document.getElementById('install-btn').addEventListener('click', async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    document.getElementById('install-banner').classList.remove('show');
+  });
+  document.getElementById('install-close').addEventListener('click', () => {
+    document.getElementById('install-banner').classList.remove('show');
+  });
+
+  // service worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js');
+  }
+
+  // todos — persisted in localStorage
+  let todos = JSON.parse(localStorage.getItem('todos') || 'null') || [
+    { id: 1, text: 'Claude와 Todo 앱 만들기', done: true, priority: 'high' },
+    { id: 2, text: '기능 추가 아이디어 정리', done: false, priority: 'mid' },
+    { id: 3, text: '코드 리뷰 요청하기', done: false, priority: 'low' },
+  ];
+  let nextId = Math.max(0, ...todos.map(t => t.id)) + 1;
+  let filter = 'all';
+
+  const priorityLabel = { high: '높음', mid: '보통', low: '낮음' };
+  const priorityClass = { high: 'p-high', mid: 'p-mid', low: 'p-low' };
+
+  function save() {
+    localStorage.setItem('todos', JSON.stringify(todos));
+  }
+
+  function render() {
+    let visible = todos;
+    if (filter === 'active') visible = todos.filter(t => !t.done);
+    else if (filter === 'done') visible = todos.filter(t => t.done);
+    else if (filter === 'high') visible = todos.filter(t => t.priority === 'high');
+
+    document.getElementById('cnt-all').textContent = todos.length;
+    document.getElementById('cnt-done').textContent = todos.filter(t => t.done).length;
+    document.getElementById('cnt-left').textContent = todos.filter(t => !t.done).length;
+
+    const list = document.getElementById('todo-list');
+    if (visible.length === 0) {
+      list.innerHTML = '<div class="empty">할 일이 없습니다.</div>';
+      return;
+    }
+    list.innerHTML = visible.map(t => `
+      <div class="todo-card ${t.done ? 'done' : ''}">
+        <div class="checkbox ${t.done ? 'checked' : ''}" onclick="toggle(${t.id})">
+          <svg class="checkmark" viewBox="0 0 11 11" fill="none">
+            <path d="M1.5 5.5L4.2 8.2L9.5 2.5" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <span class="todo-text">${t.text}</span>
+        <span class="priority-badge ${priorityClass[t.priority]}">${priorityLabel[t.priority]}</span>
+        <button class="delete-btn" onclick="remove(${t.id})">✕</button>
+      </div>
+    `).join('');
+  }
+
+  function toggle(id) {
+    const t = todos.find(t => t.id === id);
+    if (t) { t.done = !t.done; save(); render(); }
+  }
+  function remove(id) {
+    todos = todos.filter(t => t.id !== id);
+    save(); render();
+  }
+  function addTask() {
+    const input = document.getElementById('new-task');
+    const prio = document.getElementById('new-priority').value;
+    const text = input.value.trim();
+    if (!text) return;
+    todos.unshift({ id: nextId++, text, done: false, priority: prio });
+    input.value = '';
+    save(); render();
+  }
+
+  document.getElementById('add-btn').onclick = addTask;
+  document.getElementById('new-task').addEventListener('keydown', e => {
+    if (e.key === 'Enter') addTask();
+  });
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      filter = btn.dataset.filter;
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      render();
+    });
+  });
+
+  render();
+</script>
+</body>
+</html>
